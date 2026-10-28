@@ -1,0 +1,76 @@
+'use strict';
+const $ = id => document.getElementById(id);
+const stages = [
+  ['Source EMRs','Start with the clinical narrative.','Each record keeps its patient identity and admission date. The examples are synthetic.'],
+  ['Time expressions','Make time explicit.','Highlighted mentions keep source offsets. Exact dates, coarse intervals and unresolved expressions remain distinguishable.'],
+  ['Event triggers','Find the action in the text.','Select a highlighted trigger to inspect its event tuple. The badge identifies which extraction backend actually produced these results.'],
+  ['Time blocks','Give each passage a time context.','Blocks begin at temporal mentions. Event association also considers sentence context, so a postposed time does not discard its preceding object.'],
+  ['Event tuples','One event. Four core elements.','Time, trigger, object and type form each event. Negation and uncertainty are preserved as additional assertions.'],
+  ['Single chains','Keep every patient history intact.','Dated histories follow normalized time. Each connector names the actual relation: before, overlapping time, or document order. Spacing does not encode elapsed time.'],
+  ['Combined chains','A shared concept connects histories.','A positive, certain disease or symptom mentioned by at least two patients retrieves their complete chains. Patients and dates stay separate.'],
+  ['Knowledge fusion','Connect concepts to their context.','The graph joins patient events, shared concepts and the supplied knowledge graph. Edge labels describe their actual provenance; no causal relation is inferred.']
+];
+let result = null, stage = 0, selected = null, localServer = false;
+const element = (tag, className, content) => { const node = document.createElement(tag); if(className) node.className=className; if(content!==undefined) node.textContent=content; return node; };
+function empty(container, message){container.append(element('div','empty',message));}
+function eventTime(event){return event.time ? event.time.span.text : 'Unspecified time';}
+function dateLabel(event){if(!event.time) return 'unresolved'; const t=event.time; return t.start_date ? (t.start_date===t.end_date?t.start_date:`${t.start_date} … ${t.end_date}`) : t.status;}
+function tag(event){return element('span',`tag ${event.negated?'negative':event.uncertain?'uncertain':''}`,`${event.type}${event.negated?' · negated':''}${event.uncertain?' · uncertain':''}`);}
+function selectEvent(id){selected=id;renderInspector();if(stage>=4)renderView();}
+function highlighted(text, spans, className){
+  const paragraph=element('p','narrative'), chars=Array.from(text); let cursor=0;
+  const sorted=[...spans].sort((a,b)=>a.start-b.start||b.end-a.end);
+  for(const span of sorted){if(span.start<cursor)continue;paragraph.append(document.createTextNode(chars.slice(cursor,span.start).join('')));const mark=element('mark',className,chars.slice(span.start,span.end).join(''));if(span.eventId){mark.tabIndex=0;mark.setAttribute('role','button');mark.addEventListener('click',()=>selectEvent(span.eventId));mark.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selectEvent(span.eventId);}});}paragraph.append(mark);cursor=span.end;}
+  paragraph.append(document.createTextNode(chars.slice(cursor).join('')));return paragraph;
+}
+function renderRecords(){
+  for(const record of result.records){
+    const card=element('section','record'), head=element('div','record-head');
+    head.append(element('span','',`${record.patient_id} / ${record.record_id}`),element('span','',record.admission_date||'No admission date'));card.append(head);
+    if(stage===3){for(const block of record.blocks){const item=element('div','block');const time=record.times.find(t=>t.id===block.time_id);item.append(element('small','',time?`${time.span.text} · ${time.start_date||time.status}`:'No preceding time mention'),document.createTextNode(block.text));card.append(item);}}
+    else{const spans=stage===1?record.times.map(t=>t.span):stage===2?record.events.map(e=>({...e.trigger,eventId:e.id})):[];card.append(highlighted(record.text,spans,stage===2?'trigger-hit':''));}
+    $('view').append(card);
+  }
+}
+function renderTuples(){
+  const wrapper=element('div','table-wrap'), table=element('table'), head=element('thead'), row=element('tr');
+  for(const text of ['Patient','Time','Trigger','Object','Type / assertion'])row.append(element('th','',text));head.append(row);table.append(head);
+  const body=element('tbody');for(const event of result.events){const tr=element('tr',selected===event.id?'selected':'');tr.tabIndex=0;for(const value of [event.patient_id,eventTime(event),event.trigger.text,event.object.text])tr.append(element('td','',value));const type=element('td');type.append(tag(event));tr.append(type);tr.addEventListener('click',()=>selectEvent(event.id));tr.addEventListener('keydown',e=>{if(e.key==='Enter')selectEvent(event.id);});body.append(tr);}table.append(body);wrapper.append(table);$('view').append(wrapper);if(!result.events.length)empty($('view'),'No events were found by this backend.');
+}
+function timeline(container, chains){
+  for(const chain of chains){const row=element('section','patient-row'), title=element('div','patient-title');title.append(element('span','',chain.patient_id),element('small','',chain.ordering==='date'?'NORMALIZED TIME':'DOCUMENT ORDER'));row.append(title);const track=element('div','track');for(const [index,id]of chain.event_ids.entries()){const event=result.events.find(e=>e.id===id);if(!event)continue;const card=element('button',`event-card ${selected===id?'selected':''}`);card.append(element('small','',`${eventTime(event)} / ${dateLabel(event)}`),element('b','',event.object.text),tag(event));card.addEventListener('click',()=>selectEvent(id));track.append(card);if(index<chain.event_ids.length-1){const link=chain.links.find(l=>l.source===id&&l.target===chain.event_ids[index+1]);const connector=element('div','connector','→');const relation=link?link.relation:'document_order';connector.append(element('small','',relation.replaceAll('_',' ')));track.append(connector);}}row.append(track);container.append(row);}
+}
+function renderCombined(){
+  if(!result.combined_chains.length){empty($('view'),'No shared positive disease or symptom was found across two or more patients. Negated and uncertain mentions do not create shared-concept groups.');return;}
+  for(const group of result.combined_chains){const box=element('section','group'), head=element('div','group-head',group.concept);head.append(element('small','',`${group.patient_ids.length} patients · ${group.matching_event_ids.length} matching mentions`));box.append(head);timeline(box,result.chains.filter(c=>group.chain_ids.includes(c.id)));$('view').append(box);}
+}
+function renderGraph(){
+  const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg'), wrapper=element('div','graph-scroll');svg.classList.add('graph-svg');
+  const nodes=result.graph.nodes, edges=result.graph.edges;
+  const events=nodes.filter(n=>n.kind==='event'), concepts=nodes.filter(n=>n.kind==='shared_concept'), knowledge=nodes.filter(n=>n.kind==='knowledge');
+  const height=Math.max(350,100+Math.max(events.length,concepts.length,knowledge.length)*57), positions=new Map();svg.setAttribute('viewBox',`0 0 820 ${height}`);svg.setAttribute('aria-label','Event and knowledge graph');svg.setAttribute('role','img');
+  const svgEl=(name,attrs,text)=>{const n=document.createElementNS(ns,name);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+  const columns=[[events,110,'PATIENT EVENTS'],[concepts,410,'SHARED CONCEPTS'],[knowledge,705,'KNOWLEDGE GRAPH']];
+  for(const [list,x,label]of columns){svg.append(svgEl('text',{x,y:28,fill:'#9bb1bd','font-size':10,'text-anchor':'middle','letter-spacing':1},label));list.forEach((node,i)=>positions.set(node.id,{x,y:65+i*57}));}
+  for(const edge of edges){const a=positions.get(edge.source),b=positions.get(edge.target);if(!a||!b)continue;const color=edge.provenance==='temporal_normalizer'?'#3c5b6e':'#3a776c';const path=svgEl('path',{d:`M${a.x},${a.y} C${a.x+(a.x===b.x?90:90)},${a.y} ${b.x+(a.x===b.x?90:-90)},${b.y} ${b.x},${b.y}`,stroke:color,'stroke-width':1.2,fill:'none',opacity:.65});path.append(svgEl('title',{},`${edge.relation} / ${edge.provenance||'supplied'}`));svg.append(path);}
+  for(const node of nodes){const p=positions.get(node.id);if(!p)continue;const group=svgEl('g',{class:'graph-node',tabindex:0,role:'button','aria-label':node.label});const color=node.kind==='shared_concept'?'#83e2c6':node.kind==='knowledge'?'#edcd8c':'#92bafa';group.append(svgEl('rect',{x:p.x-87,y:p.y-18,width:174,height:36,rx:5,fill:'#152936',stroke:'#34515f'}));group.append(svgEl('text',{x:p.x,y:p.y+4,'text-anchor':'middle',fill:color,'font-size':11},Array.from(node.label).slice(0,16).join('')));group.append(svgEl('title',{},`${node.label}${node.patient_id?' / '+node.patient_id:''}`));const inspect=()=>{if(node.event_id){selectEvent(node.event_id);}else{$('inspect-title').textContent=node.label;$('inspector').replaceChildren(element('p','',`${node.kind}. Connections are supplied graph relations or explicit concept matches, not inferred causes.`));for(const edge of edges.filter(e=>e.source===node.id||e.target===node.id)){const field=element('div','field');field.append(element('small','',edge.relation),element('div','',`${edge.source} → ${edge.target}`));$('inspector').append(field);}}};group.addEventListener('click',inspect);group.addEventListener('keydown',e=>{if(e.key==='Enter')inspect();});svg.append(group);}
+  wrapper.append(svg);$('view').append(wrapper,element('p','graph-legend','Blue: patient events · Teal: shared concepts · Gold: supplied knowledge. Select nodes; hover edges for relation labels. Each event retains its patient ID.'));
+}
+function renderInspector(){
+  const event=result?.events.find(e=>e.id===selected);$('inspector').replaceChildren();if(!event){$('inspect-title').textContent='Select an event';$('inspector').append(element('p','','Select a trigger, event row or timeline card to inspect its exact source.'));return;}
+  $('inspect-title').textContent=event.object.text;
+  const fields=[['Event / patient',`${event.id} / ${event.patient_id}`],['Time',`${eventTime(event)} · ${dateLabel(event)}`],['Trigger',`${event.trigger.text} [${event.trigger.start}, ${event.trigger.end})`],['Object',`${event.object.text} [${event.object.start}, ${event.object.end})`],['Type / assertion',`${event.type} · ${event.negated?'negated':'positive'}${event.uncertain?' · uncertain':''}`],['Provenance',event.provenance]];
+  for(const [label,value]of fields){const field=element('div','field');field.append(element('small','',label),element('div','',value));$('inspector').append(field);}
+}
+function renderView(){const definition=stages[stage];$('step-label').textContent=`STAGE ${String(stage+1).padStart(2,'0')} / 08`;$('stage-title').textContent=definition[1];$('stage-description').textContent=definition[2];$('view').replaceChildren();$('prev').disabled=stage===0;$('next').disabled=stage===7;Array.from($('stages').children).forEach((b,i)=>{b.classList.toggle('active',i===stage);b.setAttribute('aria-current',i===stage?'step':'false');});if(stage<4)renderRecords();else if(stage===4)renderTuples();else if(stage===5)timeline($('view'),result.chains);else if(stage===6)renderCombined();else renderGraph();}
+function accept(data){if(!data||data.schema_version!=='1.0'||!Array.isArray(data.records)||!Array.isArray(data.events)||!Array.isArray(data.chains)||!Array.isArray(data.combined_chains)||!data.graph)throw Error('Expected an exported schema_version 1.0 pipeline report.');result=data;selected=null;$('backend').textContent=`${data.metadata.backend.name.toUpperCase()} ${data.metadata.backend.trained?'BACKEND':'BASELINE'}`;$('metrics').replaceChildren();for(const [value,label]of [[data.chains.length,'patient chains'],[data.events.length,'events'],[data.combined_chains.length,'shared concepts']]){const metric=element('div','metric');metric.append(element('b','',String(value).padStart(2,'0')),element('small','',label));$('metrics').append(metric);}$('mode-note').textContent=data.metadata.backend.description+'. Graph links do not imply causality.';renderInspector();renderView();}
+function download(){if(!result)return;const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));const link=element('a');link.href=url;link.download='medical-event-chains.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+async function run(){let payload;try{payload=JSON.parse($('record-input').value);if(!localServer)throw Error('New extraction needs the local server. Run: mec serve, then open http://127.0.0.1:8000');$('run').disabled=true;const response=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:JSON.stringify(data.detail));accept(data);$('editor').close();$('status').textContent='';}catch(error){$('editor-note').textContent=error.message;}finally{$('run').disabled=false;}}
+async function start(){
+  stages.forEach((definition,index)=>{const button=element('button');button.append(element('span','number',String(index+1).padStart(2,'0')),element('span','',definition[0]));button.addEventListener('click',()=>{stage=index;if(result)renderView();});$('stages').append(button);});
+  $('prev').onclick=()=>{stage=Math.max(0,stage-1);if(result)renderView();};$('next').onclick=()=>{stage=Math.min(7,stage+1);if(result)renderView();};$('download').onclick=download;$('import').onclick=()=>$('file').click();$('run').onclick=run;
+  $('edit').onclick=()=>{const input={records:result?result.records.map(({record_id,patient_id,text,admission_date})=>({record_id,patient_id,text,admission_date})):[]};$('record-input').value=JSON.stringify(input,null,2);$('editor-note').textContent=localServer?'Extraction uses the server backend shown above.':'Standalone report: use mec serve to extract new records.';$('editor').showModal();};
+  $('file').onchange=async e=>{try{const file=e.target.files[0];if(file.size>10_000_000)throw Error('File exceeds 10 MB');const data=JSON.parse(await file.text());accept(data);$('status').textContent='Imported pipeline report.';}catch(error){$('status').textContent=error.message;}e.target.value='';};
+  try{const embedded=$('mec-data');if(embedded){accept(JSON.parse(embedded.textContent));return;}const health=await fetch('/api/health');if(!health.ok)throw Error('Cannot connect to extraction server');localServer=true;const payload=await(await fetch('/api/example')).json();const response=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!response.ok)throw Error('Example extraction failed');accept(await response.json());}catch(error){$('backend').textContent='NO SERVER';$('status').textContent=`${error.message}. Open an exported report.json, or start mec serve.`;}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();

@@ -1,0 +1,2 @@
+{"id": "dev-1", "text": "今日出现咳嗽。给予对症治疗。", "triggers": [{"start": 2, "end": 4, "text": "出现", "type": "Occurrence"}, {"start": 7, "end": 9, "text": "给予", "type": "Treatment"}], "synthetic": true}
+{"id": "dev-2", "text": "昨日诊断为湿疹。行血液检查。", "triggers": [{"start": 2, "end": 4, "text": "诊断", "type": "Diagnosis"}, {"start": 11, "end": 13, "text": "检查", "type": "Check"}], "synthetic": true}

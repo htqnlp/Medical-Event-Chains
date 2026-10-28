@@ -1,0 +1,29 @@
+{
+  "description": "New synthetic narratives for software demonstration; no real patient data.",
+  "records": [
+    {
+      "record_id": "demo-A",
+      "patient_id": "Synthetic-A",
+      "admission_date": "2026-10-20",
+      "text": "4天前出现皮疹，伴有乏力。2天前行血常规检查，诊断为药物性皮炎，给予氯雷他定。今日皮疹减轻，无发热。"
+    },
+    {
+      "record_id": "demo-B",
+      "patient_id": "Synthetic-B",
+      "admission_date": "2026-10-21",
+      "text": "2026年10月18日出现皮疹。次日接受抗过敏治疗。今日行血液检查，考虑湿疹，无咳嗽。"
+    }
+  ],
+  "knowledge_graph": {
+    "source": "synthetic_demonstration_not_CMeKG",
+    "nodes": [
+      {"id": "rash", "label": "皮疹"},
+      {"id": "skin", "label": "皮肤症状"},
+      {"id": "observation", "label": "临床观察"}
+    ],
+    "edges": [
+      {"source": "rash", "target": "skin", "relation": "example_category"},
+      {"source": "rash", "target": "observation", "relation": "example_related_concept"}
+    ]
+  }
+}

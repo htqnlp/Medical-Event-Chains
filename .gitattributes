@@ -1,0 +1,13 @@
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.jsonl text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+web/reference/emr-event-atlas.html -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+legacy/requirement.txt -text
+legacy/final_test_sanitized.py whitespace=-blank-at-eol,-blank-at-eof

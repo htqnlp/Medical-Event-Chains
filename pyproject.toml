@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medical-event-chains"
+version = "0.1.0"
+description = "Reconstructed time-guided medical event chain research pipeline (BIBM 2023)"
+requires-python = ">=3.10"
+authors = [{name = "Tianqi Hu"}]
+dependencies = []
+readme = "README.md"
+
+[project.optional-dependencies]
+neural = ["torch>=2.5,<3", "transformers>=4.46,<5"]
+web = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
+test = ["pytest>=8,<10", "httpx>=0.27,<1"]
+
+[project.scripts]
+mec = "medical_event_chains.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["medical_event_chains*"]
+
+[tool.setuptools.package-data]
+medical_event_chains = ["web/*", "examples/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

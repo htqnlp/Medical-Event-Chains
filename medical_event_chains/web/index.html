@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Medical Event Chains · Research Explorer</title>
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="#"><span class="mark">m<span>·</span>ec</span><span>Medical Event Chains<small>RESEARCH EXPLORER / BIBM 2023</small></span></a><div class="actions"><span id="backend" class="badge">Loading</span><button id="import">Open JSON</button><button id="edit">Edit records</button><button id="download">Export JSON ↗</button><input id="file" type="file" accept=".json,application/json" hidden></div></header>
+<main>
+<section class="hero"><div><p class="eyebrow">TIME-GUIDED · DISEASE-CENTERED</p><h1>Every event.<br><em>In its own history.</em></h1><p class="intro">Explore the path from a clinical narrative to connected patient histories. Select a stage, then inspect the source behind each event.</p></div><div id="metrics" class="metrics"></div></section>
+<div id="status" role="status" aria-live="polite"></div>
+<section class="workspace"><nav id="stages" aria-label="Extraction stages"></nav><article class="canvas"><div class="canvas-head"><div><p id="step-label" class="eyebrow"></p><h2 id="stage-title"></h2></div><div class="step-controls"><button id="prev" aria-label="Previous stage">←</button><button id="next" aria-label="Next stage">→</button></div></div><p id="stage-description" class="description"></p><div id="view"></div></article><aside><p class="eyebrow">SOURCE INSPECTOR</p><h3 id="inspect-title">Select an event</h3><div id="inspector"><p>Every extracted tuple keeps its record, patient and source character offsets.</p></div></aside></section>
+<footer><p>Reconstructed research implementation · <a href="https://doi.org/10.1109/BIBM58861.2023.10385422" target="_blank" rel="noreferrer">Read the paper ↗</a></p><p id="mode-note">The rule baseline is a demonstration, not a trained clinical model. Graph links do not imply causality.</p></footer>
+</main>
+<dialog id="editor"><form method="dialog"><div class="dialog-head"><div><p class="eyebrow">INPUT / JSON</p><h2>Build another history.</h2></div><button aria-label="Close editor">×</button></div><p>Supply records with unique record_id, patient_id, text and optional admission_date (YYYY-MM-DD). Use de-identified or synthetic text.</p><textarea id="record-input" spellcheck="false" aria-label="Record input JSON"></textarea><div class="dialog-bottom"><span id="editor-note"></span><button id="run" type="button" class="primary">Extract & build chains →</button></div></form></dialog>
+</body></html>

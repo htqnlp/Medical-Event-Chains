@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this reconstructed implementation, cite the underlying paper and identify this repository as a reconstruction."
+title: "Medical Event Chains: reconstructed research implementation"
+type: software
+authors:
+  - family-names: Hu
+    given-names: Tianqi
+repository-code: "https://github.com/htqnlp/Medical-Event-Chains"
+version: 0.1.0
+preferred-citation:
+  type: conference-paper
+  authors:
+    - family-names: Li
+      given-names: Lishuang
+    - family-names: Hu
+      given-names: Tianqi
+    - family-names: Qin
+      given-names: Xueyang
+  title: "A Time-Guided Method for Constructing Combined Medical Event Chains"
+  collection-title: "2023 IEEE International Conference on Bioinformatics and Biomedicine (BIBM)"
+  year: 2023
+  start: 2027
+  end: 2030
+  doi: "10.1109/BIBM58861.2023.10385422"

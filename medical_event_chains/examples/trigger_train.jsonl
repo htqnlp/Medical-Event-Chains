@@ -1,0 +1,6 @@
+{"id": "train-1", "text": "今日出现皮疹。给予氯雷他定。", "triggers": [{"start": 2, "end": 4, "text": "出现", "type": "Occurrence"}, {"start": 7, "end": 9, "text": "给予", "type": "Treatment"}], "synthetic": true}
+{"id": "train-2", "text": "昨日诊断为肺炎。行胸部CT检查。", "triggers": [{"start": 2, "end": 4, "text": "诊断", "type": "Diagnosis"}, {"start": 13, "end": 15, "text": "检查", "type": "Check"}], "synthetic": true}
+{"id": "train-3", "text": "今日实施食管切除术。", "triggers": [{"start": 2, "end": 4, "text": "实施", "type": "Surgery"}], "synthetic": true}
+{"id": "train-4", "text": "三天前发生发热。接受抗感染治疗。", "triggers": [{"start": 3, "end": 5, "text": "发生", "type": "Occurrence"}, {"start": 8, "end": 10, "text": "接受", "type": "Treatment"}], "synthetic": true}
+{"id": "train-5", "text": "患者确诊糖尿病。检测血糖。", "triggers": [{"start": 2, "end": 4, "text": "确诊", "type": "Diagnosis"}, {"start": 8, "end": 10, "text": "检测", "type": "Check"}], "synthetic": true}
+{"id": "train-6", "text": "今日进行肿瘤切除术。患者诉胸痛。", "triggers": [{"start": 2, "end": 4, "text": "进行", "type": "Surgery"}, {"start": 12, "end": 13, "text": "诉", "type": "Occurrence"}], "synthetic": true}

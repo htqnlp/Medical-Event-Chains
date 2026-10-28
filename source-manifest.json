@@ -1,0 +1,21 @@
+{
+  "sources": [
+    {
+      "name": "final_test.py",
+      "sha256": "3f13f2bf21034c21245c7fd2094d199fcdfa03f2c922435b1d47adf2fbc520db"
+    },
+    {
+      "name": "requirement.txt",
+      "sha256": "17ff76a6142f871b7f6f1682b9e640887527752e5ade9257827abdc2d146389c"
+    },
+    {
+      "name": "emr-event-atlas.html",
+      "sha256": "1ce2edae59197eb4bab732030b13987f58cdf769502c544a862e6f6059659a36"
+    }
+  ],
+  "transformations": {
+    "final_test.py": "Replace one top-level literal text assignment with synthetic narrative; add archive notice. Original local file unchanged.",
+    "requirement.txt": "Preserved bytes; human note, not an installable dependency list.",
+    "emr-event-atlas.html": "Preserved bytes; illustrative reference, not extraction results."
+  }
+}
